@@ -206,6 +206,6 @@ Use this section as a live status board for this project.
 - [x] `pbiviz package --certification-audit` has been run
 - [x] Sample `.pbix` file is staged in submission assets
 - [ ] Sample `.pbix` still needs final offline/version validation
-- [ ] Real author/support/repository metadata still needed
+- [x] Author/support/repository metadata populated
 - [ ] Privacy policy / support / EULA decision still needed
 - [ ] Partner Center offer setup still needed

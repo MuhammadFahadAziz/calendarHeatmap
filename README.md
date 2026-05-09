@@ -6,8 +6,8 @@ A Power BI custom visual that renders daily values in a month-by-month calendar 
 
 - Visual name: `Calendar Heatmap`
 - GUID: `calendarHeatmap9C5B780604B844298D143AD6DD95EB16`
-- Current version: `1.0.0.21`
-- Package: `dist/calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.21.pbiviz`
+- Current version: `1.0.0.23`
+- Package: `dist/calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.23.pbiviz`
 
 ## Features
 
@@ -56,7 +56,7 @@ Use the lowercase `certification` branch for the exact code snapshot that matche
 
 ## Remaining manual items
 
-- Replace placeholder author/support metadata in `pbiviz.json`
+- Review author/support metadata in `pbiviz.json` and adjust if needed
 - Publish the repo to GitHub and add the public repository URL
 - Validate the sample offline `.pbix`
 - Provide privacy policy, support link, and EULA/contract choice

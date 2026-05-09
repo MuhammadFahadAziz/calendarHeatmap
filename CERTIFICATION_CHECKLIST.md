@@ -13,7 +13,7 @@
 - [x] Rendering events are implemented
 - [x] Cross-filtering and selection are implemented
 - [ ] Create and keep a lowercase `certification` branch matching the submitted package
-- [ ] Replace placeholder author/support/repository metadata
+- [x] Author/support/repository metadata populated
 
 ## Required Assets
 
@@ -48,7 +48,7 @@
 
 ## Current Notes
 
-- Current visual version: `1.0.0.22`
+- Current visual version: `1.0.0.23`
 - Sample report path: `submission-assets/CalendarHeatmap_SampleReport.pbix`
 - Latest package should be rebuilt before submission if code changes again
 - Do not change the visual GUID when publishing updates
