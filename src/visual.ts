@@ -153,6 +153,8 @@ export class Visual implements IVisual {
         const colorPalette = this.visualHost.colorPalette;
         const isHighContrast = colorPalette.isHighContrast;
         const labelColor = isHighContrast ? colorPalette.foreground.value : layout.labelColor.value.value;
+        const titleColor = isHighContrast ? colorPalette.foreground.value : header.titleColor.value.value;
+        const subtitleColor = isHighContrast ? colorPalette.foreground.value : header.subtitleColor.value.value;
         const borderColor = isHighContrast ? colorPalette.foreground.value : layout.borderColor.value.value;
         const visualBackground = isHighContrast ? colorPalette.background.value : "transparent";
         const selectionColor = this.getSelectionAccentColor();
@@ -169,6 +171,8 @@ export class Visual implements IVisual {
         this.root.style.setProperty("--cell-gap", `${requestedGap}px`);
         this.root.style.setProperty("--title-size", `${header.titleSize.value}px`);
         this.root.style.setProperty("--subtitle-size", `${header.subtitleSize.value}px`);
+        this.root.style.setProperty("--title-color", titleColor);
+        this.root.style.setProperty("--subtitle-color", subtitleColor);
         this.root.style.setProperty("--font-size", `${effectiveFontSize}px`);
         this.root.style.setProperty("--month-title-size", `${effectiveMonthTitleSize}px`);
         this.root.style.setProperty("--month-min-width", `${monthMinWidth}px`);
