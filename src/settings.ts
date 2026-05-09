@@ -61,16 +61,35 @@ class HeaderCardSettings extends FormattingSettingsCard {
         value: 22
     });
 
+    titleColor = new formattingSettings.ColorPicker({
+        name: "titleColor",
+        displayName: "Title color",
+        value: { value: "#111827" }
+    });
+
     subtitleSize = new formattingSettings.NumUpDown({
         name: "subtitleSize",
         displayName: "Subtitle size",
         value: 13
     });
 
+    subtitleColor = new formattingSettings.ColorPicker({
+        name: "subtitleColor",
+        displayName: "Subtitle color",
+        value: { value: "#4b5563" }
+    });
+
     name: string = "header";
     displayName: string = "Header";
     topLevelSlice = this.showHeader;
-    slices: Array<FormattingSettingsSlice> = [this.titleText, this.subtitleText, this.titleSize, this.subtitleSize];
+    slices: Array<FormattingSettingsSlice> = [
+        this.titleText,
+        this.subtitleText,
+        this.titleSize,
+        this.titleColor,
+        this.subtitleSize,
+        this.subtitleColor
+    ];
 }
 
 class LayoutCardSettings extends FormattingSettingsCard {

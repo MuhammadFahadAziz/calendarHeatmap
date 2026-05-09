@@ -17,9 +17,9 @@
 
 ## Required Assets
 
-- [ ] `300x300` PNG icon for AppSource listing
-- [ ] `1-5` screenshots in PNG format, each exactly `1366x768`
-- [ ] Sample `.pbix` report using the same visual version
+- [x] `300x300` PNG icon for AppSource listing
+- [x] `1-5` screenshots in PNG format, each exactly `1366x768`
+- [x] Sample `.pbix` report file staged for submission
 - [ ] Privacy policy URL
 - [ ] Support URL
 - [ ] EULA or Standard Contract decision
@@ -48,6 +48,7 @@
 
 ## Current Notes
 
-- Current visual version: `1.0.0.18`
-- Latest package should be rebuilt before submission
+- Current visual version: `1.0.0.22`
+- Sample report path: `submission-assets/CalendarHeatmap_SampleReport.pbix`
+- Latest package should be rebuilt before submission if code changes again
 - Do not change the visual GUID when publishing updates
