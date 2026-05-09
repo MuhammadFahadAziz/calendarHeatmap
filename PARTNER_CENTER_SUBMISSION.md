@@ -3,7 +3,7 @@
 ## Files to upload
 
 - PBIVIZ package:
-  [calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.21.pbiviz](C:\Users\fahad\OneDrive\Documents\GitHub\CustomVisuals\calendarHeatmap\dist\calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.21.pbiviz)
+  [calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.23.pbiviz](C:\Users\fahad\OneDrive\Documents\GitHub\CustomVisuals\calendarHeatmap\dist\calendarHeatmap9C5B780604B844298D143AD6DD95EB16.1.0.0.23.pbiviz)
 - Listing icon:
   [CalendarHeatmap_Icon_300.png](C:\Users\fahad\OneDrive\Documents\GitHub\CustomVisuals\calendarHeatmap\submission-assets\CalendarHeatmap_Icon_300.png)
 - Screenshots:
@@ -73,7 +73,7 @@ Certification branch:
 certification
 
 Visual package version:
-1.0.0.21
+1.0.0.23
 
 Access details:
 <only if repository is private>

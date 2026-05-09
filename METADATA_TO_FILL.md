@@ -1,13 +1,13 @@
 # Metadata To Fill Before Submission
 
-Update [pbiviz.json](C:\Users\fahad\OneDrive\Documents\GitHub\CustomVisuals\calendarHeatmap\pbiviz.json) with real values for:
+Current metadata in [pbiviz.json](C:\Users\fahad\OneDrive\Documents\GitHub\CustomVisuals\calendarHeatmap\pbiviz.json):
 
-- `visual.supportUrl`
-- `visual.gitHubUrl`
-- `author.name`
-- `author.email`
+- `visual.supportUrl`: `https://github.com/MuhammadFahadAziz/calendarHeatmap/issues`
+- `visual.gitHubUrl`: `https://github.com/MuhammadFahadAziz/calendarHeatmap`
+- `author.name`: `MuhammadFahadAziz`
+- `author.email`: `fahadaziz77@gmail.com`
 
-Recommended examples:
+If you want different business-facing values later, replace them with your preferred public contact details. Example:
 
 ```json
 "supportUrl": "https://yourdomain.com/powerbi/calendar-heatmap/support",
