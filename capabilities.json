@@ -165,6 +165,53 @@
                 }
             }
         },
+        "dataLabels": {
+            "properties": {
+                "showDataLabels": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "dataLabelSize": {
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                },
+                "displayUnits": {
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "auto",
+                                "displayName": "Auto"
+                            },
+                            {
+                                "value": "none",
+                                "displayName": "None"
+                            },
+                            {
+                                "value": "thousands",
+                                "displayName": "Thousands (K)"
+                            },
+                            {
+                                "value": "millions",
+                                "displayName": "Millions (M)"
+                            },
+                            {
+                                "value": "billions",
+                                "displayName": "Billions (B)"
+                            }
+                        ]
+                    }
+                },
+                "decimalPlaces": {
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
         "general": {
             "properties": {
                 "filter": {

@@ -32,6 +32,7 @@ interface MonthCellData {
     dayOfMonth: number;
     value: number | null;
     formattedValue: string;
+    dataLabelText: string;
     color: string;
     selectionId: ISelectionId | null;
     isSelected: boolean;
@@ -72,6 +73,8 @@ export class Visual implements IVisual {
     private activeDayKey: string | null = null;
     private activeMonthKey: string | null = null;
     private activeFilterTarget: IFilterColumnTarget | null = null;
+    private effectiveCellSize: number = 26;
+    private effectiveDataLabelSize: number = 10;
 
     constructor(options: VisualConstructorOptions) {
         this.formattingSettingsService = new FormattingSettingsService();
@@ -150,6 +153,7 @@ export class Visual implements IVisual {
     private applyLayoutSettings(viewport: powerbi.IViewport): void {
         const header = this.formattingSettings.headerCard;
         const layout = this.formattingSettings.layoutCard;
+        const dataLabels = this.formattingSettings.dataLabelsCard;
         const colorPalette = this.visualHost.colorPalette;
         const isHighContrast = colorPalette.isHighContrast;
         const labelColor = isHighContrast ? colorPalette.foreground.value : layout.labelColor.value.value;
@@ -162,10 +166,19 @@ export class Visual implements IVisual {
         const requestedGap = layout.cellGap.value;
         const safeViewportWidth = Math.max(320, viewport.width);
         const maxSingleMonthCellSize = Math.max(18, Math.floor((safeViewportWidth - 72 - (requestedGap * 6)) / 7));
-        const effectiveCellSize = Math.max(18, Math.min(requestedCellSize, maxSingleMonthCellSize));
+        const requestedDataLabelSize = Math.max(8, Math.min(dataLabels.dataLabelSize.value, 16));
+        const minimumCellSize = dataLabels.showDataLabels.value
+            ? Math.max(30, Math.ceil(requestedDataLabelSize * 2.7))
+            : 18;
+        const effectiveCellSize = Math.max(18, Math.min(Math.max(requestedCellSize, minimumCellSize), maxSingleMonthCellSize));
         const effectiveFontSize = Math.min(layout.fontSize.value, Math.max(10, Math.floor(effectiveCellSize * 0.6)));
+        const maxDataLabelSizeFromCell = Math.max(8, Math.floor((effectiveCellSize - 6) / 2.7));
+        const effectiveDataLabelSize = Math.max(8, Math.min(requestedDataLabelSize, 16, maxDataLabelSizeFromCell));
         const monthMinWidth = Math.max(280, (effectiveCellSize * 7) + (requestedGap * 6) + 56);
         const effectiveMonthTitleSize = Math.max(10, Math.min(layout.monthTitleSize.value, 32));
+
+        this.effectiveCellSize = effectiveCellSize;
+        this.effectiveDataLabelSize = effectiveDataLabelSize;
 
         this.root.style.setProperty("--cell-size", `${effectiveCellSize}px`);
         this.root.style.setProperty("--cell-gap", `${requestedGap}px`);
@@ -178,6 +191,7 @@ export class Visual implements IVisual {
         this.root.style.setProperty("--month-min-width", `${monthMinWidth}px`);
         this.root.style.setProperty("--label-color", labelColor);
         this.root.style.setProperty("--border-color", borderColor);
+        this.root.style.setProperty("--data-label-size", `${effectiveDataLabelSize}px`);
         this.root.style.setProperty("--visual-background", visualBackground);
         this.root.style.setProperty("--selection-color", selectionColor);
         this.root.style.setProperty("--selection-shadow", this.hexToRgba(selectionColor, 0.18));
@@ -294,6 +308,7 @@ export class Visual implements IVisual {
                     dayOfMonth: day,
                     value,
                     formattedValue: value === null ? "No data" : this.formatNumber(value),
+                    dataLabelText: value === null ? "" : this.formatDataLabelValue(value),
                     color: dayValue?.overrideColor ?? this.getDefaultCellColor(value),
                     selectionId: dayValue?.selectionId ?? null,
                     isSelected: dayValue?.key === this.activeDayKey,
@@ -458,10 +473,19 @@ export class Visual implements IVisual {
                         const dayLabel = document.createElement("span");
                         dayLabel.className = "calendar-heatmap__day-label";
                         dayLabel.textContent = cellData.dayOfMonth.toString();
-                        dayLabel.style.color = this.getReadableTextColor(
+                        const readableColor = this.getReadableTextColor(
                             cellData.isSelected ? this.getSelectionAccentColor() : cellData.color
                         );
+                        dayLabel.style.color = readableColor;
                         cell.appendChild(dayLabel);
+
+                        if (this.shouldRenderDataLabel(cellData)) {
+                            const valueLabel = document.createElement("span");
+                            valueLabel.className = "calendar-heatmap__value-label";
+                            valueLabel.textContent = cellData.dataLabelText;
+                            valueLabel.style.color = readableColor;
+                            cell.appendChild(valueLabel);
+                        }
                     }
 
                     monthGrid.appendChild(cell);
@@ -959,6 +983,61 @@ export class Visual implements IVisual {
         return new Intl.NumberFormat(undefined, {
             maximumFractionDigits: 2
         }).format(value);
+    }
+
+    private formatDataLabelValue(value: number): string {
+        const dataLabels = this.formattingSettings.dataLabelsCard;
+        const decimalPlaces = Math.max(0, Math.min(3, dataLabels.decimalPlaces.value));
+        const selectedUnit = dataLabels.displayUnits.value?.value?.toString() ?? "auto";
+
+        const resolvedUnit = selectedUnit === "auto" ? this.getAutoDisplayUnit(value) : selectedUnit;
+        const unitConfig = this.getDisplayUnitConfig(resolvedUnit);
+        const scaledValue = value / unitConfig.divisor;
+
+        return `${new Intl.NumberFormat(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: decimalPlaces
+        }).format(scaledValue)}${unitConfig.suffix}`;
+    }
+
+    private getAutoDisplayUnit(value: number): string {
+        const absoluteValue = Math.abs(value);
+
+        if (absoluteValue >= 1_000_000_000) {
+            return "billions";
+        }
+
+        if (absoluteValue >= 1_000_000) {
+            return "millions";
+        }
+
+        if (absoluteValue >= 1_000) {
+            return "thousands";
+        }
+
+        return "none";
+    }
+
+    private getDisplayUnitConfig(unit: string): { divisor: number; suffix: string } {
+        switch (unit) {
+            case "billions":
+                return { divisor: 1_000_000_000, suffix: "B" };
+            case "millions":
+                return { divisor: 1_000_000, suffix: "M" };
+            case "thousands":
+                return { divisor: 1_000, suffix: "K" };
+            default:
+                return { divisor: 1, suffix: "" };
+        }
+    }
+
+    private shouldRenderDataLabel(cellData: MonthCellData): boolean {
+        if (!this.formattingSettings.dataLabelsCard.showDataLabels.value || cellData.value === null) {
+            return false;
+        }
+
+        const minimumCellSize = Math.max(30, Math.ceil(this.effectiveDataLabelSize * 2.7));
+        return this.effectiveCellSize >= minimumCellSize;
     }
 
     private toDate(value: string | number | boolean | Date | undefined): Date | null {

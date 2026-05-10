@@ -208,6 +208,64 @@ class LegendCardSettings extends FormattingSettingsCard {
     slices: Array<FormattingSettingsSlice> = [this.showLegend];
 }
 
+class DataLabelsCardSettings extends FormattingSettingsCard {
+    showDataLabels = new formattingSettings.ToggleSwitch({
+        name: "showDataLabels",
+        displayName: "Show data labels",
+        value: false
+    });
+
+    dataLabelSize = new formattingSettings.NumUpDown({
+        name: "dataLabelSize",
+        displayName: "Data label size",
+        value: 10,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 8
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 16
+            }
+        }
+    });
+
+    displayUnits = new formattingSettings.ItemDropdown({
+        name: "displayUnits",
+        displayName: "Display units",
+        items: [
+            { value: "auto", displayName: "Auto" },
+            { value: "none", displayName: "None" },
+            { value: "thousands", displayName: "Thousands (K)" },
+            { value: "millions", displayName: "Millions (M)" },
+            { value: "billions", displayName: "Billions (B)" }
+        ],
+        value: { value: "auto", displayName: "Auto" }
+    });
+
+    decimalPlaces = new formattingSettings.NumUpDown({
+        name: "decimalPlaces",
+        displayName: "Decimal places",
+        value: 1,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 0
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 3
+            }
+        }
+    });
+
+    name: string = "dataLabels";
+    displayName: string = "Data labels";
+    topLevelSlice = this.showDataLabels;
+    slices: Array<FormattingSettingsSlice> = [this.dataLabelSize, this.displayUnits, this.decimalPlaces];
+}
+
 /**
 * visual settings model class
 *
@@ -217,6 +275,7 @@ export class VisualFormattingSettingsModel extends FormattingSettingsModel {
     layoutCard = new LayoutCardSettings();
     colorCard = new ColorCardSettings();
     legendCard = new LegendCardSettings();
+    dataLabelsCard = new DataLabelsCardSettings();
 
-    cards = [this.headerCard, this.layoutCard, this.colorCard, this.legendCard];
+    cards = [this.headerCard, this.layoutCard, this.colorCard, this.legendCard, this.dataLabelsCard];
 }
