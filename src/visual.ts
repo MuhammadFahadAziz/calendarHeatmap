@@ -153,6 +153,7 @@ export class Visual implements IVisual {
     private applyLayoutSettings(viewport: powerbi.IViewport): void {
         const header = this.formattingSettings.headerCard;
         const layout = this.formattingSettings.layoutCard;
+        const legend = this.formattingSettings.legendCard;
         const dataLabels = this.formattingSettings.dataLabelsCard;
         const colorPalette = this.visualHost.colorPalette;
         const isHighContrast = colorPalette.isHighContrast;
@@ -160,8 +161,11 @@ export class Visual implements IVisual {
         const titleColor = isHighContrast ? colorPalette.foreground.value : header.titleColor.value.value;
         const subtitleColor = isHighContrast ? colorPalette.foreground.value : header.subtitleColor.value.value;
         const borderColor = isHighContrast ? colorPalette.foreground.value : layout.borderColor.value.value;
+        const legendTextColor = isHighContrast ? colorPalette.foreground.value : legend.textColor.value.value;
         const visualBackground = isHighContrast ? colorPalette.background.value : "transparent";
         const selectionColor = this.getSelectionAccentColor();
+        const legendStartColor = isHighContrast ? colorPalette.foreground.value : legend.startColor.value.value;
+        const legendEndColor = isHighContrast ? colorPalette.foreground.value : legend.endColor.value.value;
         const requestedCellSize = layout.cellSize.value;
         const requestedGap = layout.cellGap.value;
         const safeViewportWidth = Math.max(320, viewport.width);
@@ -191,6 +195,10 @@ export class Visual implements IVisual {
         this.root.style.setProperty("--month-min-width", `${monthMinWidth}px`);
         this.root.style.setProperty("--label-color", labelColor);
         this.root.style.setProperty("--border-color", borderColor);
+        this.root.style.setProperty("--legend-font-size", `${legend.fontSize.value}px`);
+        this.root.style.setProperty("--legend-text-color", legendTextColor);
+        this.root.style.setProperty("--legend-start-color", legendStartColor);
+        this.root.style.setProperty("--legend-end-color", legendEndColor);
         this.root.style.setProperty("--data-label-size", `${effectiveDataLabelSize}px`);
         this.root.style.setProperty("--visual-background", visualBackground);
         this.root.style.setProperty("--selection-color", selectionColor);
@@ -534,6 +542,7 @@ export class Visual implements IVisual {
     }
 
     private createLegend(metricName: string, aggregatedValues: Map<string, AggregatedDayValue>): HTMLElement {
+        const legendSettings = this.formattingSettings.legendCard;
         const legend = document.createElement("div");
         legend.className = "calendar-heatmap__legend";
 
@@ -546,19 +555,23 @@ export class Visual implements IVisual {
 
         const label = document.createElement("span");
         label.className = "calendar-heatmap__legend-label";
-        label.textContent = metricName;
+        label.textContent = legendSettings.legendTitle.value?.trim() || metricName;
 
         const swatch = document.createElement("div");
         swatch.className = "calendar-heatmap__legend-swatch";
         swatch.style.background = this.visualHost.colorPalette.isHighContrast
             ? this.visualHost.colorPalette.foreground.value
-            : "linear-gradient(90deg, #dbeafe, #1d4ed8)";
+            : `linear-gradient(90deg, ${legendSettings.startColor.value.value}, ${legendSettings.endColor.value.value})`;
 
-        const range = document.createElement("div");
-        range.className = "calendar-heatmap__legend-range";
-        range.textContent = `${this.formatNumber(minValue)} - ${this.formatNumber(maxValue)}`;
+        legend.append(label, swatch);
 
-        legend.append(label, swatch, range);
+        if (legendSettings.showRange.value) {
+            const range = document.createElement("div");
+            range.className = "calendar-heatmap__legend-range";
+            range.textContent = `${this.formatNumber(minValue)} - ${this.formatNumber(maxValue)}`;
+            legend.appendChild(range);
+        }
+
         return legend;
     }
 
@@ -671,14 +684,15 @@ export class Visual implements IVisual {
 
         const dayStart = new Date(cellData.date.getFullYear(), cellData.date.getMonth(), cellData.date.getDate());
         const dayEnd = new Date(cellData.date.getFullYear(), cellData.date.getMonth(), cellData.date.getDate() + 1);
-        const filter = new AdvancedFilter(
+        const dayFilter = new AdvancedFilter(
             this.activeFilterTarget,
             "And",
             { operator: "GreaterThanOrEqual", value: dayStart },
             { operator: "LessThan", value: dayEnd }
         ).toJSON();
 
-        this.visualHost.applyJsonFilter(filter, "general", "filter", powerbi.FilterAction.merge);
+        void this.selectionManager.clear();
+        this.visualHost.applyJsonFilter(dayFilter, "general", "filter", powerbi.FilterAction.merge);
     }
 
     private handleMonthSelection(month: MonthData): void {
@@ -707,6 +721,7 @@ export class Visual implements IVisual {
             { operator: "LessThan", value: nextMonthStart }
         ).toJSON();
 
+        void this.selectionManager.clear();
         this.visualHost.applyJsonFilter(filter, "general", "filter", powerbi.FilterAction.merge);
     }
 
@@ -714,6 +729,7 @@ export class Visual implements IVisual {
         this.activeDayKey = null;
         this.activeMonthKey = null;
         this.renderCurrentState();
+        void this.selectionManager.clear();
         this.visualHost.applyJsonFilter(null, "general", "filter", powerbi.FilterAction.merge);
     }
 
@@ -865,9 +881,30 @@ export class Visual implements IVisual {
     }
 
     private getFilterTarget(column: powerbi.DataViewMetadataColumn): IFilterColumnTarget | null {
+        const expressionTarget = this.getFilterTargetFromExpression((column as { expr?: unknown }).expr);
+        if (expressionTarget) {
+            return expressionTarget;
+        }
+
         const queryName = column.queryName;
         if (!queryName) {
             return null;
+        }
+
+        const slashParts = queryName.split("/").filter(Boolean);
+        if (slashParts.length >= 2) {
+            return {
+                table: slashParts[0],
+                column: slashParts[1]
+            };
+        }
+
+        const dotParts = queryName.split(".").filter(Boolean);
+        if (dotParts.length >= 2) {
+            return {
+                table: dotParts[0],
+                column: dotParts[1]
+            };
         }
 
         const separatorIndex = Math.max(queryName.lastIndexOf("."), queryName.lastIndexOf("/"));
@@ -879,6 +916,46 @@ export class Visual implements IVisual {
             table: queryName.slice(0, separatorIndex),
             column: queryName.slice(separatorIndex + 1)
         };
+    }
+
+    private getFilterTargetFromExpression(expression: unknown): IFilterColumnTarget | null {
+        if (!expression || typeof expression !== "object") {
+            return null;
+        }
+
+        const candidate = expression as {
+            source?: { entity?: string };
+            ref?: string;
+            arg?: unknown;
+            expr?: unknown;
+            left?: unknown;
+            right?: unknown;
+            input?: unknown;
+        };
+
+        if (candidate.source?.entity && typeof candidate.ref === "string") {
+            return {
+                table: candidate.source.entity,
+                column: candidate.ref
+            };
+        }
+
+        const nestedExpressions = [
+            candidate.arg,
+            candidate.expr,
+            candidate.left,
+            candidate.right,
+            candidate.input
+        ];
+
+        for (const nestedExpression of nestedExpressions) {
+            const nestedTarget = this.getFilterTargetFromExpression(nestedExpression);
+            if (nestedTarget) {
+                return nestedTarget;
+            }
+        }
+
+        return null;
     }
 
     private getCalendarColumn(date: Date, mondayFirst: boolean): number {

@@ -203,9 +203,64 @@ class LegendCardSettings extends FormattingSettingsCard {
         value: true
     });
 
+    legendTitle = new formattingSettings.TextInput({
+        name: "legendTitle",
+        displayName: "Legend title",
+        value: "",
+        placeholder: "Leave blank to use the measure name"
+    });
+
+    showRange = new formattingSettings.ToggleSwitch({
+        name: "showRange",
+        displayName: "Show value range",
+        value: true
+    });
+
+    fontSize = new formattingSettings.NumUpDown({
+        name: "fontSize",
+        displayName: "Text size",
+        value: 12,
+        options: {
+            minValue: {
+                type: powerbi.visuals.ValidatorType.Min,
+                value: 8
+            },
+            maxValue: {
+                type: powerbi.visuals.ValidatorType.Max,
+                value: 24
+            }
+        }
+    });
+
+    textColor = new formattingSettings.ColorPicker({
+        name: "textColor",
+        displayName: "Text color",
+        value: { value: "#4b5563" }
+    });
+
+    startColor = new formattingSettings.ColorPicker({
+        name: "startColor",
+        displayName: "Start color",
+        value: { value: "#dbeafe" }
+    });
+
+    endColor = new formattingSettings.ColorPicker({
+        name: "endColor",
+        displayName: "End color",
+        value: { value: "#1d4ed8" }
+    });
+
     name: string = "legend";
     displayName: string = "Legend";
-    slices: Array<FormattingSettingsSlice> = [this.showLegend];
+    topLevelSlice = this.showLegend;
+    slices: Array<FormattingSettingsSlice> = [
+        this.legendTitle,
+        this.showRange,
+        this.fontSize,
+        this.textColor,
+        this.startColor,
+        this.endColor
+    ];
 }
 
 class DataLabelsCardSettings extends FormattingSettingsCard {
