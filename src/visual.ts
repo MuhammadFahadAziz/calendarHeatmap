@@ -166,7 +166,7 @@ export class Visual implements IVisual {
         const subtitleColor = isHighContrast ? colorPalette.foreground.value : header.subtitleColor.value.value;
         const borderColor = isHighContrast ? colorPalette.foreground.value : layout.borderColor.value.value;
         const legendTextColor = isHighContrast ? colorPalette.foreground.value : legend.textColor.value.value;
-        const visualBackground = isHighContrast ? colorPalette.background.value : "transparent";
+        const visualBackground = isHighContrast ? colorPalette.background.value : "#ffffff";
         const selectionColor = this.getSelectionAccentColor();
         const legendStartColor = isHighContrast ? colorPalette.foreground.value : legend.startColor.value.value;
         const legendEndColor = isHighContrast ? colorPalette.foreground.value : legend.endColor.value.value;
@@ -392,7 +392,7 @@ export class Visual implements IVisual {
             monthCard.className = "calendar-heatmap__month";
             monthCard.classList.toggle("calendar-heatmap__month--selected", month.isSelected);
             if (month.cardColor) {
-                monthCard.style.background = this.getGlassSurface(month.cardColor);
+                monthCard.style.background = this.getCardSurface(month.cardColor);
                 monthCard.style.borderColor = this.getColorWithAlpha(month.cardColor, 0.34);
             }
 
@@ -1092,14 +1092,12 @@ export class Visual implements IVisual {
         return dominantColor;
     }
 
-    private getGlassSurface(color: string): string {
+    private getCardSurface(color: string): string {
         if (this.visualHost.colorPalette.isHighContrast) {
             return this.visualHost.colorPalette.background.value;
         }
 
-        const topTint = this.getColorWithAlpha(color, 0.24);
-        const bottomTint = this.getColorWithAlpha(color, 0.14);
-        return `linear-gradient(180deg, ${topTint} 0%, ${bottomTint} 100%), var(--surface-background-strong)`;
+        return color;
     }
 
     private hexToRgb(hex: string): { red: number; green: number; blue: number } {
