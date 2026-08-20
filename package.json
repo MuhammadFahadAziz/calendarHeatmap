@@ -1,7 +1,7 @@
 {
   "name": "calendar-heatmap-visual",
   "description": "A custom Power BI calendar heatmap visual.",
-  "version": "1.0.0.23",
+  "version": "1.0.0.24",
   "repository": {
     "type": "git",
     "url": ""
