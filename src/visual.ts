@@ -77,6 +77,7 @@ export class Visual implements IVisual {
     private activeMonthKey: string | null = null;
     private activeFilterTarget: IFilterColumnTarget | null = null;
     private effectiveCellSize: number = 26;
+    private effectiveCellGap: number = 4;
     private effectiveDataLabelSize: number = 10;
 
     constructor(options: VisualConstructorOptions) {
@@ -186,6 +187,7 @@ export class Visual implements IVisual {
         const effectiveMonthTitleSize = this.snapPixel(Math.max(10, Math.min(layout.monthTitleSize.value, 32)));
 
         this.effectiveCellSize = effectiveCellSize;
+        this.effectiveCellGap = requestedGap;
         this.effectiveDataLabelSize = effectiveDataLabelSize;
 
         this.root.style.setProperty("--cell-size", `${effectiveCellSize}px`);
@@ -428,87 +430,7 @@ export class Visual implements IVisual {
 
             monthCard.appendChild(monthHeader);
 
-            if (this.formattingSettings.layoutCard.showWeekdayLabels.value) {
-                const weekdayRow = document.createElement("div");
-                weekdayRow.className = "calendar-heatmap__weekday-row";
-
-                weekdayLabels.forEach(label => {
-                    const weekday = document.createElement("span");
-                    weekday.className = "calendar-heatmap__weekday";
-                    weekday.textContent = label;
-                    weekdayRow.appendChild(weekday);
-                });
-
-                monthCard.appendChild(weekdayRow);
-            }
-
-            const monthGrid = document.createElement("div");
-            monthGrid.className = "calendar-heatmap__grid";
-
-            month.weeks.forEach(week => {
-                week.forEach(cellData => {
-                    const cell = document.createElement("div");
-                    cell.className = "calendar-heatmap__cell";
-
-                    if (!cellData) {
-                        cell.classList.add("calendar-heatmap__cell--empty");
-                    } else {
-                        cell.style.backgroundColor = cellData.color;
-                        cell.classList.toggle("calendar-heatmap__cell--selected", cellData.isSelected);
-                        cell.tabIndex = 0;
-                        cell.setAttribute("role", "button");
-                        cell.setAttribute(
-                            "aria-label",
-                            `${cellData.monthLabel}, day ${cellData.dayOfMonth}. ${metricName}: ${cellData.formattedValue}.`
-                        );
-                        cell.addEventListener("click", (event: MouseEvent) => {
-                            event.stopPropagation();
-                            this.handleDaySelection(cellData);
-                        });
-                        cell.addEventListener("keydown", (event: KeyboardEvent) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                this.handleDaySelection(cellData);
-                            }
-                        });
-                        cell.addEventListener("contextmenu", (event: MouseEvent) => {
-                            this.selectionManager.showContextMenu(
-                                cellData.selectionId ?? ({} as ISelectionId),
-                                { x: event.clientX, y: event.clientY }
-                            );
-                            event.preventDefault();
-                            event.stopPropagation();
-                        });
-                        this.attachTooltipHandlers(
-                            cell,
-                            () => this.getDayTooltipData(cellData, metricName),
-                            () => cellData.selectionId ? [cellData.selectionId] : []
-                        );
-
-                        const dayLabel = document.createElement("span");
-                        dayLabel.className = "calendar-heatmap__day-label";
-                        dayLabel.textContent = cellData.dayOfMonth.toString();
-                        const readableColor = this.getReadableTextColor(
-                            cellData.isSelected ? this.getSelectionAccentColor() : cellData.color
-                        );
-                        dayLabel.style.color = readableColor;
-                        cell.appendChild(dayLabel);
-
-                        if (this.shouldRenderDataLabel(cellData)) {
-                            const valueLabel = document.createElement("span");
-                            valueLabel.className = "calendar-heatmap__value-label";
-                            valueLabel.textContent = cellData.dataLabelText;
-                            valueLabel.style.color = readableColor;
-                            cell.appendChild(valueLabel);
-                        }
-                    }
-
-                    monthGrid.appendChild(cell);
-                });
-            });
-
-            monthCard.appendChild(monthGrid);
+            monthCard.appendChild(this.createMonthSvg(month, weekdayLabels, metricName));
             monthsGrid.appendChild(monthCard);
         });
 
@@ -583,8 +505,133 @@ export class Visual implements IVisual {
         return legend;
     }
 
+    private createMonthSvg(month: MonthData, weekdayLabels: string[], metricName: string): SVGSVGElement {
+        const cellSize = this.effectiveCellSize;
+        const cellGap = this.effectiveCellGap;
+        const calendarWidth = (cellSize * 7) + (cellGap * 6);
+        const weekdayHeight = this.formattingSettings.layoutCard.showWeekdayLabels.value
+            ? Math.max(18, this.effectiveDataLabelSize + 10)
+            : 0;
+        const calendarHeight = weekdayHeight + (cellSize * 6) + (cellGap * 5);
+        const svg = this.createSvgElement<SVGSVGElement>("svg");
+        svg.classList.add("calendar-heatmap__calendar-svg");
+        svg.setAttribute("viewBox", `0 0 ${calendarWidth} ${calendarHeight}`);
+        svg.setAttribute("width", calendarWidth.toString());
+        svg.setAttribute("height", calendarHeight.toString());
+        svg.setAttribute("role", "group");
+        svg.setAttribute("aria-label", `${month.title} calendar`);
+        svg.setAttribute("shape-rendering", "geometricPrecision");
+
+        if (weekdayHeight > 0) {
+            weekdayLabels.forEach((label, index) => {
+                const weekday = this.createSvgElement<SVGTextElement>("text");
+                weekday.classList.add("calendar-heatmap__svg-weekday");
+                weekday.setAttribute("x", this.getSvgCellCenter(index, cellSize, cellGap).toString());
+                weekday.setAttribute("y", Math.floor(weekdayHeight / 2).toString());
+                weekday.setAttribute("dominant-baseline", "middle");
+                weekday.textContent = label;
+                svg.appendChild(weekday);
+            });
+        }
+
+        month.weeks.forEach((week, weekIndex) => {
+            week.forEach((cellData, dayIndex) => {
+                if (!cellData) {
+                    return;
+                }
+
+                const x = this.getSvgCellX(dayIndex, cellSize, cellGap);
+                const y = weekdayHeight + (weekIndex * (cellSize + cellGap));
+                const cell = this.createSvgElement<SVGGElement>("g");
+                cell.classList.add("calendar-heatmap__svg-cell");
+                cell.classList.toggle("calendar-heatmap__svg-cell--selected", cellData.isSelected);
+                cell.setAttribute("tabindex", "0");
+                cell.setAttribute("role", "button");
+                cell.setAttribute(
+                    "aria-label",
+                    `${cellData.monthLabel}, day ${cellData.dayOfMonth}. ${metricName}: ${cellData.formattedValue}.`
+                );
+
+                const shape = this.createSvgElement<SVGRectElement>("rect");
+                shape.classList.add("calendar-heatmap__svg-cell-shape");
+                shape.setAttribute("x", x.toString());
+                shape.setAttribute("y", y.toString());
+                shape.setAttribute("width", cellSize.toString());
+                shape.setAttribute("height", cellSize.toString());
+                shape.setAttribute("rx", Math.min(8, Math.floor(cellSize / 3)).toString());
+                shape.setAttribute("fill", cellData.isSelected ? this.getSelectionAccentColor() : cellData.color);
+                shape.setAttribute("shape-rendering", "geometricPrecision");
+                cell.appendChild(shape);
+
+                const readableColor = this.getReadableTextColor(
+                    cellData.isSelected ? this.getSelectionAccentColor() : cellData.color
+                );
+                const dayLabel = this.createSvgElement<SVGTextElement>("text");
+                dayLabel.classList.add("calendar-heatmap__svg-day-label");
+                dayLabel.setAttribute("x", (x + cellSize - 5).toString());
+                dayLabel.setAttribute("y", (y + 5).toString());
+                dayLabel.setAttribute("fill", readableColor);
+                dayLabel.setAttribute("text-anchor", "end");
+                dayLabel.setAttribute("dominant-baseline", "hanging");
+                dayLabel.textContent = cellData.dayOfMonth.toString();
+                cell.appendChild(dayLabel);
+
+                if (this.shouldRenderDataLabel(cellData)) {
+                    const valueLabel = this.createSvgElement<SVGTextElement>("text");
+                    valueLabel.classList.add("calendar-heatmap__svg-value-label");
+                    valueLabel.setAttribute("x", (x + (cellSize / 2)).toString());
+                    valueLabel.setAttribute("y", (y + cellSize - 5).toString());
+                    valueLabel.setAttribute("fill", readableColor);
+                    valueLabel.setAttribute("text-anchor", "middle");
+                    valueLabel.textContent = cellData.dataLabelText;
+                    cell.appendChild(valueLabel);
+                }
+
+                cell.addEventListener("click", (event: MouseEvent) => {
+                    event.stopPropagation();
+                    this.handleDaySelection(cellData);
+                });
+                cell.addEventListener("keydown", (event: KeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.handleDaySelection(cellData);
+                    }
+                });
+                cell.addEventListener("contextmenu", (event: MouseEvent) => {
+                    this.selectionManager.showContextMenu(
+                        cellData.selectionId ?? ({} as ISelectionId),
+                        { x: event.clientX, y: event.clientY }
+                    );
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+                this.attachTooltipHandlers(
+                    cell,
+                    () => this.getDayTooltipData(cellData, metricName),
+                    () => cellData.selectionId ? [cellData.selectionId] : []
+                );
+                svg.appendChild(cell);
+            });
+        });
+
+        return svg;
+    }
+
+    private createSvgElement<T extends SVGElement>(tagName: string): T {
+        return document.createElementNS("http://www.w3.org/2000/svg", tagName) as T;
+    }
+
+    private getSvgCellX(columnIndex: number, cellSize: number, cellGap: number): number {
+        return columnIndex * (cellSize + cellGap);
+    }
+
+    private getSvgCellCenter(columnIndex: number, cellSize: number, cellGap: number): number {
+        return this.getSvgCellX(columnIndex, cellSize, cellGap) + (cellSize / 2);
+    }
+
     private attachTooltipHandlers(
-        element: HTMLElement,
+        element: Element,
         getTooltipData: () => VisualTooltipDataItem[],
         getIdentities: () => ISelectionId[]
     ): void {
