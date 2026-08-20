@@ -16,9 +16,9 @@
     --legend-end-color: #1d4ed8;
     --data-label-size: 10px;
     --visual-background: transparent;
-    --surface-background: rgba(255, 255, 255, 0.48);
-    --surface-background-strong: rgba(255, 255, 255, 0.62);
-    --surface-shadow: rgba(15, 23, 42, 0.08);
+    --surface-background: #ffffff;
+    --surface-background-strong: #ffffff;
+    --surface-shadow: transparent;
     --selection-color: #f59e0b;
     --selection-shadow: rgba(245, 158, 11, 0.18);
 
@@ -91,9 +91,7 @@
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--surface-background);
-    box-shadow: 0 12px 30px var(--surface-shadow);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: none;
 }
 
 .calendar-heatmap__month {
@@ -109,12 +107,12 @@
 
 .calendar-heatmap__month:has(.calendar-heatmap__month-header:hover) {
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: none;
 }
 
 .calendar-heatmap__month--selected {
     border-color: var(--selection-color);
-    box-shadow: 0 12px 30px var(--surface-shadow);
+    box-shadow: none;
 }
 
 .calendar-heatmap__month-header {

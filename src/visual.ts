@@ -9,6 +9,8 @@ import "./../style/visual.less";
 import ISelectionId = powerbi.visuals.ISelectionId;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
+import ITooltipService = powerbi.extensibility.ITooltipService;
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -64,6 +66,7 @@ export class Visual implements IVisual {
     private root: HTMLDivElement;
     private visualHost: IVisualHost;
     private selectionManager: ISelectionManager;
+    private tooltipService: ITooltipService;
     private events: IVisualEventService;
     private formattingSettings: VisualFormattingSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
@@ -80,6 +83,7 @@ export class Visual implements IVisual {
         this.formattingSettingsService = new FormattingSettingsService();
         this.visualHost = options.host;
         this.selectionManager = options.host.createSelectionManager();
+        this.tooltipService = options.host.tooltipService;
         this.events = options.host.eventService;
         this.container = options.element;
         this.root = document.createElement("div");
@@ -406,6 +410,11 @@ export class Visual implements IVisual {
                     this.handleMonthSelection(month);
                 }
             });
+            this.attachTooltipHandlers(
+                monthHeader,
+                () => this.getMonthTooltipData(month, metricName),
+                () => []
+            );
 
             const monthTitle = document.createElement("h3");
             monthTitle.className = "calendar-heatmap__month-title";
@@ -446,12 +455,6 @@ export class Visual implements IVisual {
                     } else {
                         cell.style.backgroundColor = cellData.color;
                         cell.classList.toggle("calendar-heatmap__cell--selected", cellData.isSelected);
-                        cell.title = `${cellData.date.toLocaleDateString(undefined, {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric"
-                        })}\n${metricName}: ${cellData.formattedValue}`;
                         cell.tabIndex = 0;
                         cell.setAttribute("role", "button");
                         cell.setAttribute(
@@ -477,6 +480,11 @@ export class Visual implements IVisual {
                             event.preventDefault();
                             event.stopPropagation();
                         });
+                        this.attachTooltipHandlers(
+                            cell,
+                            () => this.getDayTooltipData(cellData, metricName),
+                            () => cellData.selectionId ? [cellData.selectionId] : []
+                        );
 
                         const dayLabel = document.createElement("span");
                         dayLabel.className = "calendar-heatmap__day-label";
@@ -573,6 +581,91 @@ export class Visual implements IVisual {
         }
 
         return legend;
+    }
+
+    private attachTooltipHandlers(
+        element: HTMLElement,
+        getTooltipData: () => VisualTooltipDataItem[],
+        getIdentities: () => ISelectionId[]
+    ): void {
+        if (!this.tooltipService?.enabled()) {
+            return;
+        }
+
+        element.addEventListener("mouseenter", (event: MouseEvent) => {
+            const dataItems = getTooltipData();
+            if (dataItems.length === 0) {
+                return;
+            }
+
+            this.tooltipService.show({
+                coordinates: [event.clientX, event.clientY],
+                isTouchEvent: false,
+                dataItems,
+                identities: getIdentities()
+            });
+        });
+
+        element.addEventListener("mousemove", (event: MouseEvent) => {
+            this.tooltipService.move({
+                coordinates: [event.clientX, event.clientY],
+                isTouchEvent: false,
+                dataItems: getTooltipData(),
+                identities: getIdentities()
+            });
+        });
+
+        element.addEventListener("mouseleave", () => {
+            this.tooltipService.hide({
+                isTouchEvent: false,
+                immediately: false
+            });
+        });
+    }
+
+    private getDayTooltipData(cellData: MonthCellData, metricName: string): VisualTooltipDataItem[] {
+        return [
+            {
+                displayName: "Date",
+                value: cellData.date.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric"
+                })
+            },
+            {
+                displayName: metricName,
+                value: cellData.formattedValue,
+                color: cellData.color
+            }
+        ];
+    }
+
+    private getMonthTooltipData(month: MonthData, metricName: string): VisualTooltipDataItem[] {
+        const items: VisualTooltipDataItem[] = [
+            {
+                displayName: "Month",
+                value: month.title
+            },
+            {
+                displayName: "Total",
+                value: this.formatNumber(month.summary.total)
+            },
+            {
+                displayName: "Active days",
+                value: month.summary.activeDays.toString()
+            }
+        ];
+
+        if (month.summary.peakValue !== null) {
+            items.push({
+                displayName: `Peak ${metricName}`,
+                value: this.formatNumber(month.summary.peakValue)
+            });
+        }
+
+        return items;
     }
 
     private getHeaderTitle(): string {
