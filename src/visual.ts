@@ -170,28 +170,28 @@ export class Visual implements IVisual {
         const selectionColor = this.getSelectionAccentColor();
         const legendStartColor = isHighContrast ? colorPalette.foreground.value : legend.startColor.value.value;
         const legendEndColor = isHighContrast ? colorPalette.foreground.value : legend.endColor.value.value;
-        const requestedCellSize = layout.cellSize.value;
-        const requestedGap = layout.cellGap.value;
+        const requestedCellSize = this.snapPixel(layout.cellSize.value);
+        const requestedGap = this.snapPixel(layout.cellGap.value);
         const safeViewportWidth = Math.max(320, viewport.width);
         const maxSingleMonthCellSize = Math.max(18, Math.floor((safeViewportWidth - 72 - (requestedGap * 6)) / 7));
-        const requestedDataLabelSize = Math.max(8, Math.min(dataLabels.dataLabelSize.value, 16));
+        const requestedDataLabelSize = this.snapPixel(Math.max(8, Math.min(dataLabels.dataLabelSize.value, 16)));
         const minimumCellSize = dataLabels.showDataLabels.value
             ? Math.max(30, Math.ceil(requestedDataLabelSize * 2.7))
             : 18;
-        const effectiveCellSize = Math.max(18, Math.min(Math.max(requestedCellSize, minimumCellSize), maxSingleMonthCellSize));
-        const effectiveFontSize = Math.min(layout.fontSize.value, Math.max(10, Math.floor(effectiveCellSize * 0.6)));
+        const effectiveCellSize = this.snapPixel(Math.max(18, Math.min(Math.max(requestedCellSize, minimumCellSize), maxSingleMonthCellSize)));
+        const effectiveFontSize = this.snapPixel(Math.min(layout.fontSize.value, Math.max(10, Math.floor(effectiveCellSize * 0.6))));
         const maxDataLabelSizeFromCell = Math.max(8, Math.floor((effectiveCellSize - 6) / 2.7));
-        const effectiveDataLabelSize = Math.max(8, Math.min(requestedDataLabelSize, 16, maxDataLabelSizeFromCell));
-        const monthMinWidth = Math.max(280, (effectiveCellSize * 7) + (requestedGap * 6) + 56);
-        const effectiveMonthTitleSize = Math.max(10, Math.min(layout.monthTitleSize.value, 32));
+        const effectiveDataLabelSize = this.snapPixel(Math.max(8, Math.min(requestedDataLabelSize, 16, maxDataLabelSizeFromCell)));
+        const monthMinWidth = this.snapPixel(Math.max(280, (effectiveCellSize * 7) + (requestedGap * 6) + 56));
+        const effectiveMonthTitleSize = this.snapPixel(Math.max(10, Math.min(layout.monthTitleSize.value, 32)));
 
         this.effectiveCellSize = effectiveCellSize;
         this.effectiveDataLabelSize = effectiveDataLabelSize;
 
         this.root.style.setProperty("--cell-size", `${effectiveCellSize}px`);
         this.root.style.setProperty("--cell-gap", `${requestedGap}px`);
-        this.root.style.setProperty("--title-size", `${header.titleSize.value}px`);
-        this.root.style.setProperty("--subtitle-size", `${header.subtitleSize.value}px`);
+        this.root.style.setProperty("--title-size", `${this.snapPixel(header.titleSize.value)}px`);
+        this.root.style.setProperty("--subtitle-size", `${this.snapPixel(header.subtitleSize.value)}px`);
         this.root.style.setProperty("--title-color", titleColor);
         this.root.style.setProperty("--subtitle-color", subtitleColor);
         this.root.style.setProperty("--font-size", `${effectiveFontSize}px`);
@@ -199,7 +199,7 @@ export class Visual implements IVisual {
         this.root.style.setProperty("--month-min-width", `${monthMinWidth}px`);
         this.root.style.setProperty("--label-color", labelColor);
         this.root.style.setProperty("--border-color", borderColor);
-        this.root.style.setProperty("--legend-font-size", `${legend.fontSize.value}px`);
+        this.root.style.setProperty("--legend-font-size", `${this.snapPixel(legend.fontSize.value)}px`);
         this.root.style.setProperty("--legend-text-color", legendTextColor);
         this.root.style.setProperty("--legend-start-color", legendStartColor);
         this.root.style.setProperty("--legend-end-color", legendEndColor);
@@ -1076,6 +1076,10 @@ export class Visual implements IVisual {
         }
 
         return this.visualHost.colorPalette.selection?.value || "#f59e0b";
+    }
+
+    private snapPixel(value: number): number {
+        return Math.max(0, Math.round(value));
     }
 
     private getDominantColor(colorCounts: Map<string, number>): string | null {

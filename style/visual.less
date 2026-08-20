@@ -34,6 +34,8 @@
     background: var(--visual-background);
     color: #111827;
     font-family: "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: geometricPrecision;
 }
 
 .calendar-heatmap--high-contrast {
@@ -75,14 +77,15 @@
 
 .calendar-heatmap__months {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--month-min-width)), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--month-min-width)), var(--month-min-width)));
     gap: 16px;
     align-items: start;
-    justify-items: center;
+    justify-content: start;
+    justify-items: start;
 }
 
 .calendar-heatmap__months--single {
-    grid-template-columns: minmax(280px, 1fr);
+    grid-template-columns: minmax(min(100%, var(--month-min-width)), var(--month-min-width));
 }
 
 .calendar-heatmap__month,
@@ -100,7 +103,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: fit-content;
+    width: var(--month-min-width);
     min-width: min(100%, var(--month-min-width));
     max-width: 100%;
 }
